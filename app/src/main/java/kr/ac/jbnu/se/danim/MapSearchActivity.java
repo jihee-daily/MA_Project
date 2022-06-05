@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.icu.text.AlphabeticIndex;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
@@ -118,6 +119,8 @@ public class MapSearchActivity extends AppCompatActivity implements OnMapReadyCa
                         intent.putExtra("startLng", currentPosition.longitude);
                         intent.putExtra("endLat", latLng.latitude);
                         intent.putExtra("endLng", latLng.longitude);
+
+                        Toast.makeText(getApplicationContext(),  "end" + latLng, Toast.LENGTH_SHORT).show();
                         startActivity(intent);
                     }
                 } catch(Exception e) {

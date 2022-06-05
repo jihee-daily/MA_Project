@@ -4,40 +4,31 @@ import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
-import androidx.viewpager.widget.ViewPager;
+import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ListView;
-import android.widget.Toast;
 
-import kr.ac.jbnu.se.danim.model.GlobalStorage;
-import kr.ac.jbnu.se.danim.ui.main.SectionsPagerAdapter;
-import kr.ac.jbnu.se.danim.databinding.ActivityMainBinding;
-
-import com.dinuscxj.progressbar.CircleProgressBar;
+import kr.ac.jbnu.se.danim.model.MapDirectionData;
 
 public class MainActivity extends AppCompatActivity {
 //    private ActivityMainBinding binding;
 //
 //    private GlobalStorage globalStorage;
+    Fragment fragment_main, fragment_rewards;
+
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1000;
     private static final String[] PERMISSIONS = {
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.ACTIVITY_RECOGNITION
+            Manifest.permission.ACTIVITY_RECOGNITION,
+            Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+            Manifest.permission.INTERNET
     };
 
     @Override
@@ -47,11 +38,32 @@ public class MainActivity extends AppCompatActivity {
 
        // globalStorage = GlobalStorage.getInstance();
 
-        SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(this, getSupportFragmentManager());
-        ViewPager viewPager = findViewById(R.id.view_pager);
-        viewPager.setAdapter(sectionsPagerAdapter);
-        TabLayout tabs = findViewById(R.id.tabs);
-        tabs.setupWithViewPager(viewPager);
+        //tab 설정
+        fragment_main = new MainFragment();
+        fragment_rewards = new RewardsFragment();
+        getSupportFragmentManager().beginTransaction().add(R.id.tabs_frame, fragment_main).commit();
+        TabLayout tabs = (TabLayout) findViewById(R.id.tabs);
+        tabs.addOnTabSelectedListener(new TabLayout.BaseOnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                int position = tab.getPosition();
+
+                Fragment selected = null;
+                if(position == 0){ selected = fragment_main; }
+                else if(position == 1) { selected = fragment_rewards; }
+                getSupportFragmentManager().beginTransaction().replace(R.id.tabs_frame, selected).commit();
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
 
         ImageButton profile = (ImageButton) findViewById(R.id.profileBtn);
         profile.setOnClickListener(new View.OnClickListener() {

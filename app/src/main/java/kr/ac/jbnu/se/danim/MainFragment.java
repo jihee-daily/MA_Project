@@ -1,6 +1,7 @@
 package kr.ac.jbnu.se.danim;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
@@ -24,15 +25,12 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 
+import kr.ac.jbnu.se.danim.model.MapDirectionData;
 import kr.ac.jbnu.se.danim.model.GlobalStorage;
 import kr.ac.jbnu.se.danim.model.UserData;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 import android.widget.Chronometer;
 import android.os.SystemClock;
@@ -45,7 +43,6 @@ import com.naver.maps.geometry.LatLng;
 import com.naver.maps.map.CameraAnimation;
 import com.naver.maps.map.CameraUpdate;
 import com.naver.maps.map.LocationTrackingMode;
-import com.naver.maps.map.MapFragment;
 import com.naver.maps.map.MapView;
 import com.naver.maps.map.NaverMap;
 import com.naver.maps.map.OnMapReadyCallback;
@@ -67,8 +64,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.Executor;
 
 
 public class MainFragment extends Fragment
@@ -78,8 +75,8 @@ public class MainFragment extends Fragment
     Chronometer mChrono;
 
     private GlobalStorage globalStorage;
-    UserData userName;
-    int weight;
+    UserData userData;
+    MapDirectionData mapDirectionData;
     float calorie;
     TextView tv_todayWalk_value;
     TextView main_heartRate_value;
@@ -134,88 +131,11 @@ public class MainFragment extends Fragment
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_main, container, false);
 
-        /********************* << naver map >> *********************/
-        //map view 부름
-        mapView = view.findViewById(R.id.map);
-        mapView.onCreate(savedInstanceState);
-        mapView.getMapAsync(this::onMapReady);
-        locationSource = new FusedLocationSource(this, LOCATION_PERMISSION_REQUEST_CODE);
+        if(ContextCompat.checkSelfPermission(getActivity(),
+                Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_DENIED){
 
-//        endLat = getIntent().getDoubleExtra("endLat", 0);
-//        endLng = getIntent().getDoubleExtra("endLng", 0);
-//        startLat = getIntent().getDoubleExtra("startLat", 0);
-//        startLng = getIntent().getDoubleExtra("startLng", 0);
-        if(getArguments() != null) {
-            endLat = getArguments().getDouble("endLat");
-            endLng = getArguments().getDouble("endLng");
-            startLat = getArguments().getDouble("startLat");
-            startLng = getArguments().getDouble("startLng");
+            requestPermissions(new String[]{Manifest.permission.ACTIVITY_RECOGNITION}, 0);
         }
-
-        URL url = null;
-        HttpURLConnection urlConnection = null;
-
-        try {
-            String appKey = "l7xx7d5159a19a344859952fdcb6e11f2296";
-            String sLat = String.valueOf(startLat);
-            String sLng = String.valueOf(startLat);
-            String eLat = String.valueOf(endLat);
-            String eLng = String.valueOf(endLng);
-            String reqCoordType = "WGS84GEO";
-            String rescoordType = "EPSG3857";
-            String startName = URLEncoder.encode("출발지", "UTF-8");
-            String endName = URLEncoder.encode("도착지", "UTF-8");
-
-            uu = "https://apis.openapi.sk.com/tmap/routes/pedestrian?version=1&format=json&callback=result&appKey="
-                    + appKey + "&startX=" + startLng + "&startY=" + startLat + "&endX=" + endLng + "&endY=" + endLat
-                    + "&startName=" + startName + "&endName=" + endName + "&searchOption=" + 30;
-            url = new URL(uu);
-
-        } catch (UnsupportedEncodingException | MalformedURLException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            urlConnection = (HttpURLConnection) url.openConnection();
-            urlConnection.setRequestMethod("POST");
-            urlConnection.setRequestProperty("Accept-Charset", "utf-8");
-            urlConnection.setRequestProperty("Content-Type", "application/x-form-urlencoded");
-
-            NetworkTask networkTask = new NetworkTask(uu, null);
-            networkTask.execute();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(getContext());
-
-
-
-        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 0);
-        }
-
-        fusedLocationClient.getLastLocation().addOnSuccessListener((Executor) this, new OnSuccessListener<Location>() {
-            @Override
-            public void onSuccess(Location location) {
-                currentPosition = new LatLng(location.getLatitude(), location.getLongitude());
-                Toast.makeText(getContext(), "현재 : " + currentPosition, Toast.LENGTH_LONG).show();
-
-                if (location != null) {
-                    // Logic to handle location object
-                }
-            }
-        });
-        /********************* << naver map >> *********************/
-
-
-//        if(ContextCompat.checkSelfPermission(getActivity(),
-//                Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_DENIED){
-//
-//            requestPermissions(new String[]{Manifest.permission.ACTIVITY_RECOGNITION}, 0);
-//        }
 
         //걸음 수 측정
         tv_todayWalk_value = (TextView)view.findViewById(R.id.main_todayWalk_value);
@@ -243,6 +163,81 @@ public class MainFragment extends Fragment
         Reset_btn.setOnClickListener(this);
         FloatingActionButton floatingMyLocation = view.findViewById(R.id.floatingMyLocation);
         floatingMyLocation.setOnClickListener(this);
+
+        /********************* << naver map >> *********************/
+        try{
+            mapView = view.findViewById(R.id.map);
+            mapView.onCreate(savedInstanceState);
+            mapView.getMapAsync(this::onMapReady);
+            locationSource = new FusedLocationSource(this, LOCATION_PERMISSION_REQUEST_CODE);
+
+            globalStorage.getDirectionDataHashMap();
+            startLat = mapDirectionData.getStartLat();
+            startLng = mapDirectionData.getStartLng();
+            endLat = mapDirectionData.getEndLat();
+            endLng = mapDirectionData.getEndLng();
+
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(getContext());
+
+            if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 0);
+            }
+
+            fusedLocationClient.getLastLocation().addOnSuccessListener((Activity) getContext(), new OnSuccessListener<Location>() {
+                @Override
+                public void onSuccess(Location location) {
+                    currentPosition = new LatLng(location.getLatitude(), location.getLongitude());
+                    Toast.makeText(getContext(), "현재 : " + currentPosition, Toast.LENGTH_LONG).show();
+
+                    if (location != null) {
+                        // Logic to handle location object
+                    }
+                }
+            });
+
+            URL url = null;
+            HttpURLConnection urlConnection = null;
+
+            try {
+                String appKey = "l7xx7d5159a19a344859952fdcb6e11f2296";
+                String sLat = String.valueOf(startLat);
+                String sLng = String.valueOf(startLat);
+                String eLat = String.valueOf(endLat);
+                String eLng = String.valueOf(endLng);
+                String reqCoordType = "WGS84GEO";
+                String rescoordType = "EPSG3857";
+                String startName = URLEncoder.encode("출발지", "UTF-8");
+                String endName = URLEncoder.encode("도착지", "UTF-8");
+
+                uu = "https://apis.openapi.sk.com/tmap/routes/pedestrian?version=1&format=json&callback=result&appKey="
+                        + appKey + "&startX=" + startLng + "&startY=" + startLat + "&endX=" + endLng + "&endY=" + endLat
+                        + "&startName=" + startName + "&endName=" + endName + "&searchOption=" + 30;
+                url = new URL(uu);
+
+            } catch (UnsupportedEncodingException | MalformedURLException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("POST");
+                urlConnection.setRequestProperty("Accept-Charset", "utf-8");
+                urlConnection.setRequestProperty("Content-Type", "application/x-form-urlencoded");
+
+                NetworkTask networkTask = new NetworkTask(uu, null);
+                networkTask.execute();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (NullPointerException e){
+            Toast.makeText(getContext(), "null" , Toast.LENGTH_LONG).show();
+            return view;
+        }
+
+
+        /********************* << naver map >> *********************/
 
         return view;
     }
@@ -285,11 +280,11 @@ public class MainFragment extends Fragment
         mapView.onResume();
     }
 
-//    @Override
-//    public void onPause() {
-//        super.onPause();
-//        mapView.onPause();
-//    }
+    @Override
+    public void onPause() {
+        super.onPause();
+        mapView.onPause();
+    }
 
     @Override
     public void onSaveInstanceState (@Nullable Bundle outState){
@@ -352,6 +347,7 @@ public class MainFragment extends Fragment
         }
     }
 
+    @SuppressLint("StaticFieldLeak")
     public class NetworkTask extends AsyncTask<Void, Void, String> {
         private String url;
         private ContentValues values;
@@ -451,6 +447,7 @@ public class MainFragment extends Fragment
 
                             }
 
+                            Toast.makeText(getContext(), "draw " , Toast.LENGTH_SHORT).show();
                             path.setCoords(ArrayPositionList);
                             path.setColor(Color.rgb(107, 102, 255));
                             path.setMap(naverMap);
@@ -463,6 +460,8 @@ public class MainFragment extends Fragment
             }
         }
     }
+
+
     @Override
     public void onMapReady(@NonNull NaverMap naverMap) {
         this.naverMap = naverMap;
@@ -474,6 +473,20 @@ public class MainFragment extends Fragment
 
         CameraUpdate cameraUpdate = CameraUpdate.zoomTo(17);
         naverMap.moveCamera(cameraUpdate);
+
+        naverMap.setOnMapClickListener((coord, point) -> {
+            infoWindow.close();
+        });
+
+        infoWindow.setAdapter(new InfoWindow.DefaultTextAdapter(getActivity().getApplicationContext()) {
+            @NonNull
+            @Override
+            public CharSequence getText(@NonNull InfoWindow infoWindow) {
+                // 정보 창이 열린 마커의 tag를 텍스트로 노출하도록 반환
+                return (CharSequence)infoWindow.getMarker().getTag();
+            }
+        });
+
 
     }
 //

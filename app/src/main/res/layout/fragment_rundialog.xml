@@ -8,29 +8,40 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@mipmap/ic_launcher"
-        android:layout_gravity="center"/>
+        android:layout_gravity="center"
+        android:layout_marginTop="10dp"/>
     <TextView
         android:text="1시간 달리기 챌린지에 도전하시겠습니까?"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:textColor="@color/base"
+        android:layout_marginTop="20dp"
+        android:layout_marginHorizontal="10dp"/>
     <TextView
         android:text=" 1시간 이상: gold\n 45분 이상: silver\n 그 미만: bronze"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:textColor="@color/base"
+        android:layout_marginTop="5dp"/>
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_margin="10dp">
     <Button
         android:id="@+id/okBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginRight="20dp"
-        android:text="네"/>
+        android:text="네"
+        android:textColor="@color/base"
+        android:background="@drawable/background_address"/>
     <Button
         android:id="@+id/cancelBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="아니오"/>
+        android:text="아니오"
+        android:textColor="@color/base"
+        android:background="@drawable/background_address"/>
     </LinearLayout>
 </LinearLayout>

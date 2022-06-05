@@ -23,7 +23,6 @@ public class UserData {
     public String getUserName() {
         return userName;
     }
-
     public void setUserName(String userName) {
         this.userName = userName;
     }
@@ -31,7 +30,6 @@ public class UserData {
     public int getUserAge() {
         return userAge;
     }
-
     public void setUserAge(int userAge) {
         this.userAge = userAge;
     }
@@ -39,7 +37,6 @@ public class UserData {
     public int getUserHeight() {
         return userHeight;
     }
-
     public void setUserHeight(int userHeight) {
         this.userHeight = userHeight;
     }
@@ -47,7 +44,6 @@ public class UserData {
     public int getUserWeight() {
         return userWeight;
     }
-
     public void setUserWeight(int userWeight) {
         this.userWeight = userWeight;
     }
