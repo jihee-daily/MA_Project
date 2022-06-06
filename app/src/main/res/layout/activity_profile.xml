@@ -132,7 +132,6 @@
         android:layout_marginTop="30dp"
         android:layout_gravity="center"
         android:textSize="20dp"
-        android:background="@drawable/background_trackingstart"
         android:text="edit"
-        android:textColor="@color/white" />
+        android:background="@drawable/background_trackingstart"/>
 </LinearLayout>
