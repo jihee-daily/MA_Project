@@ -15,6 +15,7 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -72,16 +73,16 @@ public class MainFragment extends Fragment
         implements SensorEventListener, View.OnClickListener, OnMapReadyCallback {
     long stopTime = 0;
 
-    Chronometer mChrono;
+    private Chronometer mChrono;
 
     private GlobalStorage globalStorage;
-    UserData userData;
-    MapDirectionData mapDirectionData;
-    float calorie;
-    TextView tv_todayWalk_value;
-    TextView main_heartRate_value;
-    SensorManager sm;
-    Sensor sensor_step_detector;
+    private UserData userData;
+    private MapDirectionData mapDirectionData;
+    private float calorie;
+    private TextView tv_todayWalk_value;
+    private TextView main_heartRate_value;
+    private SensorManager sm;
+    private Sensor sensor_step_detector;
 
     int walk = 0;
     int weight2 = 50;
@@ -165,17 +166,28 @@ public class MainFragment extends Fragment
         floatingMyLocation.setOnClickListener(this);
 
         /********************* << naver map >> *********************/
-        try{
+
             mapView = view.findViewById(R.id.map);
             mapView.onCreate(savedInstanceState);
             mapView.getMapAsync(this::onMapReady);
             locationSource = new FusedLocationSource(this, LOCATION_PERMISSION_REQUEST_CODE);
 
-            globalStorage.getDirectionDataHashMap();
-            startLat = mapDirectionData.getStartLat();
-            startLng = mapDirectionData.getStartLng();
-            endLat = mapDirectionData.getEndLat();
-            endLng = mapDirectionData.getEndLng();
+            if (globalStorage.getDirectionDataHashMap() != null && !globalStorage.getDirectionDataHashMap().isEmpty()) {
+                mapDirectionData = globalStorage.getDirectionDataHashMap().get("info");
+
+                if (mapDirectionData == null) {
+                    Log.d("MainFragment", "Data is Null1");
+                    mapDirectionData = new MapDirectionData();
+                }
+
+                startLat = mapDirectionData.getStartLat();
+                startLng = mapDirectionData.getStartLng();
+                endLat = mapDirectionData.getEndLat();
+                endLng = mapDirectionData.getEndLng();
+
+            } else {
+                Log.d("MainFragment", "Data is Null1");
+            }
 
             fusedLocationClient = LocationServices.getFusedLocationProviderClient(getContext());
 
@@ -189,52 +201,13 @@ public class MainFragment extends Fragment
                 @Override
                 public void onSuccess(Location location) {
                     currentPosition = new LatLng(location.getLatitude(), location.getLongitude());
-                    Toast.makeText(getContext(), "현재 : " + currentPosition, Toast.LENGTH_LONG).show();
+                    //Toast.makeText(getContext(), "현재 : " + currentPosition, Toast.LENGTH_LONG).show();
 
                     if (location != null) {
                         // Logic to handle location object
                     }
                 }
             });
-
-            URL url = null;
-            HttpURLConnection urlConnection = null;
-
-            try {
-                String appKey = "l7xx7d5159a19a344859952fdcb6e11f2296";
-                String sLat = String.valueOf(startLat);
-                String sLng = String.valueOf(startLat);
-                String eLat = String.valueOf(endLat);
-                String eLng = String.valueOf(endLng);
-                String reqCoordType = "WGS84GEO";
-                String rescoordType = "EPSG3857";
-                String startName = URLEncoder.encode("출발지", "UTF-8");
-                String endName = URLEncoder.encode("도착지", "UTF-8");
-
-                uu = "https://apis.openapi.sk.com/tmap/routes/pedestrian?version=1&format=json&callback=result&appKey="
-                        + appKey + "&startX=" + startLng + "&startY=" + startLat + "&endX=" + endLng + "&endY=" + endLat
-                        + "&startName=" + startName + "&endName=" + endName + "&searchOption=" + 30;
-                url = new URL(uu);
-
-            } catch (UnsupportedEncodingException | MalformedURLException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("POST");
-                urlConnection.setRequestProperty("Accept-Charset", "utf-8");
-                urlConnection.setRequestProperty("Content-Type", "application/x-form-urlencoded");
-
-                NetworkTask networkTask = new NetworkTask(uu, null);
-                networkTask.execute();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } catch (NullPointerException e){
-            Toast.makeText(getContext(), "null" , Toast.LENGTH_LONG).show();
-            return view;
-        }
 
 
         /********************* << naver map >> *********************/
@@ -487,6 +460,43 @@ public class MainFragment extends Fragment
             }
         });
 
+        try{
+            URL url = null;
+            HttpURLConnection urlConnection = null;
+            try {
+                String appKey = "l7xx7d5159a19a344859952fdcb6e11f2296";
+                String sLat = String.valueOf(startLat);
+                String sLng = String.valueOf(startLat);
+                String eLat = String.valueOf(endLat);
+                String eLng = String.valueOf(endLng);
+                String reqCoordType = "WGS84GEO";
+                String rescoordType = "EPSG3857";
+                String startName = URLEncoder.encode("출발지", "UTF-8");
+                String endName = URLEncoder.encode("도착지", "UTF-8");
+
+                uu = "https://apis.openapi.sk.com/tmap/routes/pedestrian?version=1&format=json&callback=result&appKey="
+                        + appKey + "&startX=" + startLng + "&startY=" + startLat + "&endX=" + endLng + "&endY=" + endLat
+                        + "&startName=" + startName + "&endName=" + endName + "&searchOption=" + 30;
+                url = new URL(uu);
+
+            } catch (UnsupportedEncodingException | MalformedURLException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("POST");
+                urlConnection.setRequestProperty("Accept-Charset", "utf-8");
+                urlConnection.setRequestProperty("Content-Type", "application/x-form-urlencoded");
+
+                NetworkTask networkTask = new NetworkTask(uu, null);
+                networkTask.execute();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (NullPointerException e){
+            Toast.makeText(getContext(), "null" , Toast.LENGTH_SHORT).show();
+        }
 
     }
 //

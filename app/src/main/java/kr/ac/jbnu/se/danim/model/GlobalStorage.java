@@ -7,8 +7,8 @@ import java.util.HashMap;
 public class GlobalStorage {
     private static GlobalStorage globalStorage = null;
 
-    HashMap<String, UserData> userDataHashMap;
-    HashMap<String, MapDirectionData> directionDataHashMap;
+    private HashMap<String, UserData> userDataHashMap;
+    private HashMap<String, MapDirectionData> directionDataHashMap;
 
     private GlobalStorage() {
         this.userDataHashMap = new HashMap<String, UserData>();
@@ -16,7 +16,9 @@ public class GlobalStorage {
     }
 
     public static GlobalStorage getInstance() {
-        if (globalStorage == null) {globalStorage = new GlobalStorage();}
+        if (globalStorage == null) {
+            globalStorage = new GlobalStorage();
+        }
         return globalStorage;
     }
 

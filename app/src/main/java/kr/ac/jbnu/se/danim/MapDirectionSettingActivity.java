@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -57,13 +58,15 @@ public class MapDirectionSettingActivity extends AppCompatActivity implements On
     private Double startLng;
 
     private GlobalStorage globalStorage;
-    MapDirectionData mapDirectionData;
+    private MapDirectionData mapDirectionData;
     private Object HashMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mapdirectionsetting);
+
+        globalStorage = GlobalStorage.getInstance();
 
         floatingMyLocation = findViewById(R.id.floatingMyLocation);
         textViewEndAddress = findViewById(R.id.textViewEndAddress);
@@ -75,14 +78,16 @@ public class MapDirectionSettingActivity extends AppCompatActivity implements On
         startLat = getIntent().getDoubleExtra("startLat", 0);
         startLng = getIntent().getDoubleExtra("startLng", 0);
 
-        try {
-            globalStorage.setDirectionDataHashMap(new HashMap<>());
+        if (globalStorage.getDirectionDataHashMap() != null) {
+            if (mapDirectionData == null) {
+                mapDirectionData = new MapDirectionData();
+            }
+
             mapDirectionData.setStartLat(startLat);
             mapDirectionData.setStartLng(startLng);
             mapDirectionData.setEndLat(endLat);
             mapDirectionData.setEndLng(endLng);
-        } catch (NullPointerException e) {
-            Toast.makeText(getApplicationContext(), "null-direction", Toast.LENGTH_SHORT).show();
+            globalStorage.getDirectionDataHashMap().put("info",mapDirectionData);
         }
 
         textViewEndAddress.setText(endAddress);

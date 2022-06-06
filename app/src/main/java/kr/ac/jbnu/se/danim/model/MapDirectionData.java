@@ -21,14 +21,22 @@ public class MapDirectionData {
     }
 
     public double getStartLat() {return startLat;}
-    public void setStartLat(double startLat) {this.startLat = startLat;}
+    public double setStartLat(double startLat) {this.startLat = startLat;
+        return startLat;
+    }
 
     public double getStartLng() {return startLng;}
-    public void setStartLng(double startLng) {this.startLng = startLng;}
+    public double setStartLng(double startLng) {this.startLng = startLng;
+        return startLng;
+    }
 
     public double getEndLat() {return endLat;}
-    public void setEndLat(double endLat) {this.endLat = endLat;}
+    public double setEndLat(double endLat) {this.endLat = endLat;
+        return endLat;
+    }
 
     public double getEndLng() {return endLng;}
-    public void setEndLng(double endLng) {this.endLng = endLng;}
+    public double setEndLng(double endLng) {this.endLng = endLng;
+        return endLng;
+    }
 }
