@@ -13,8 +13,10 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
+import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,6 +38,7 @@ import kr.ac.jbnu.se.danim.model.UserData;
 import android.widget.Chronometer;
 import android.os.SystemClock;
 
+import com.dinuscxj.progressbar.CircleProgressBar;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -70,11 +73,11 @@ import java.util.List;
 
 
 public class MainFragment extends Fragment
-        implements SensorEventListener, View.OnClickListener, OnMapReadyCallback {
+        implements SensorEventListener, View.OnClickListener, OnMapReadyCallback, LocationListener {
     long stopTime = 0;
 
-    private Chronometer mChrono;
-
+    private CountDownTimer countDownTimer;
+    private CircleProgressBar circleProgressBar;
     private GlobalStorage globalStorage;
     private UserData userData;
     private MapDirectionData mapDirectionData;
@@ -83,6 +86,10 @@ public class MainFragment extends Fragment
     private TextView main_heartRate_value;
     private SensorManager sm;
     private Sensor sensor_step_detector;
+    private TextView countDownDistanceView;
+    private TextView countDownTimeView;
+
+    private boolean timerRunning;
 
     int walk = 0;
     int weight2 = 50;
@@ -112,6 +119,7 @@ public class MainFragment extends Fragment
     private Double startLng;
 
     public static int totalDistance;
+    public static int totalTime;
 
     String uu;
 
@@ -120,6 +128,9 @@ public class MainFragment extends Fragment
     private ArrayList<Integer> turnTypeList = new ArrayList<>();
     private ArrayList<ArrayList<Double>> directionList = new ArrayList<ArrayList<Double>>();
 
+    private LatLng firstLatLng = new LatLng(0, 0);
+    private LatLng secondLatLng = new LatLng(0, 0);
+    private double sumOfDistance;
     /********************* << naver map >> *********************/
 
 
@@ -153,7 +164,10 @@ public class MainFragment extends Fragment
 
         calorie = 0;
 
-        mChrono = (Chronometer)view.findViewById(R.id.chrono); //getActivityd에서 view로 바꿈
+        circleProgressBar= view.findViewById(R.id.main_circlebar);
+
+        countDownTimeView = (TextView)view.findViewById(R.id.countdown_Time_view);
+        countDownDistanceView = (TextView)view.findViewById(R.id.countdown_distance_view);
 
         //버튼
         Button Start_btn = (Button) view.findViewById(R.id.start_btn);
@@ -219,14 +233,16 @@ public class MainFragment extends Fragment
     public void onClick(View view) {
         switch (view.getId()){
             case R.id.start_btn:
-                mChrono.setBase(SystemClock.elapsedRealtime());
-                mChrono.start();
+                startTimer();
+                firstLatLng = new LatLng(currentPosition.latitude, currentPosition.longitude);
+                countDownDistanceView.setText(""+ (totalDistance-sumOfDistance) / 1000+ "km");
+                circleProgressBar.setMax(totalDistance);
+                circleProgressBar.setProgress((int)sumOfDistance);
                 break;
             case R.id.stop_btn:
-                mChrono.stop();
+                stopTimer();
                 break;
             case R.id.search_btn:
-                mChrono.setBase(SystemClock.elapsedRealtime());
                 Intent intent1 = new Intent(getContext(), MapSearchActivity.class);
                 startActivityForResult(intent1, MapSearchActivity.MAPSEARCH_ACTIVITY_START);
                 break;
@@ -318,6 +334,21 @@ public class MainFragment extends Fragment
             //tv_todayWalk_value.setText(String.valueOf((int)event.values[0]));
 
         }
+    }
+
+    @Override
+    public void onLocationChanged(@NonNull Location location) {
+
+        secondLatLng = new LatLng(currentPosition.latitude, currentPosition.longitude);
+        // 누적 이동거리 갱신
+        Location firstLocation = new Location("firstLocation"); //시작 전 위치
+        firstLocation.setLatitude(firstLatLng.latitude);
+        firstLocation.setLongitude(firstLatLng.longitude);
+        Location secondLocation = new Location("secondLocation"); //이동 후 실시간 위치
+        secondLocation.setLatitude(secondLatLng.latitude);
+        secondLocation.setLongitude(secondLatLng.longitude);
+        sumOfDistance += firstLocation.distanceTo(secondLocation);     // m -> km
+
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -426,6 +457,8 @@ public class MainFragment extends Fragment
                             path.setMap(naverMap);
                         }
                     }
+                    totalDistance = Integer.valueOf(properties.get("totalDistance").toString());
+                    totalTime = Integer.valueOf(properties.get("totalTime").toString()) / 60;
                 }
     //                getObstacles();
             } catch(Exception e) {
@@ -512,4 +545,42 @@ public class MainFragment extends Fragment
 //        }
 //        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 //    }
+    private long tempTime = 0;
+    private void startTimer() {
+        Toast.makeText(getContext(), ""+ totalTime , Toast.LENGTH_SHORT).show();
+        countDownTimer = new CountDownTimer(totalTime*60000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                tempTime = millisUntilFinished;
+                updateTimer();
+            }
+
+            @Override
+            public void onFinish() {
+
+            }
+        }.start();
+        timerRunning = true;
+    }
+    private void stopTimer() {
+        countDownTimer.cancel();
+        timerRunning = false;
+    }
+    private void updateTimer() {
+        int hour = (int) tempTime / 3600000;
+        int minutes = (int) tempTime % 3600000 / 60000;
+
+        String timeLeftText = "";
+
+        //분이 10보다 작으면 0이 붙는다.
+        if(hour < 10){timeLeftText += "0";}
+        timeLeftText = hour + ":";
+
+        //분이 10보다 작으면 0이 붙는다.
+        if(minutes < 10){timeLeftText += "0";}
+        timeLeftText += minutes;
+
+        countDownTimeView.setText(timeLeftText);
+
+    }
 }
