@@ -1,12 +1,11 @@
 package kr.ac.jbnu.se.danim;
 
-import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
+import android.content.ContentResolver;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.Image;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,85 +13,79 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import kr.ac.jbnu.se.danim.databinding.ActivityMainBinding;
-import kr.ac.jbnu.se.danim.model.GlobalStorage;
+import java.io.InputStream;
 
 public class ProfileActivity extends AppCompatActivity {
     private static final String TAG = "ProfileActivity";
-    SQLiteDatabase sqlDB;
 
     public static final int PROFILE_ACTIVITY_START = 10;
     public static final int PROFILE_ACTIVITY_SUCCESS = 11;
     public static final int PROFILE_ACTIVITY_FAIL = 12;
-    TextView profile_name, profile_age, profile_height, profile_weight;
-
-//    private ActivityMainBinding binding;
-//    private GlobalStorage globalStorage;
-
+    EditText tv_name;
+    EditText tv_age;
+    EditText tv_height;
+    EditText tv_weight;
+    TextView tv_all;
+    ImageView profileimage;
+    DBHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        Button btn_edit = (Button) findViewById(R.id.editBtn);
+        profileimage = findViewById(R.id.profile_image);
+
+        Button btn_edit = (Button)findViewById(R.id.editBtn);
+        Button btn_look = (Button)findViewById(R.id.lookBtn);
+        // Button btn_selectImg = (Button)findViewById(R.id.selectImgBtn);
+        tv_name = (EditText) findViewById(R.id.profile_name);
+        tv_age = (EditText) findViewById(R.id.profile_age);
+        tv_height = (EditText) findViewById(R.id.profile_height);
+        tv_weight = (EditText) findViewById(R.id.profile_weight);
+        tv_all = (TextView)findViewById(R.id.show);
+
+
+
         btn_edit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent2 = new Intent(getApplicationContext(), UserdataActivity.class);
-                startActivityForResult(intent2, UserdataActivity.USERDATA_ACTIVITY_START);
+
+                dbHelper.insert(tv_name.getText().toString(),
+                        Integer.parseInt(tv_age.getText().toString()),
+                        Integer.parseInt(tv_height.getText().toString()),
+                        Integer.parseInt(tv_weight.getText().toString()));
+                Toast.makeText(ProfileActivity.this, "저장되었습니다.", Toast.LENGTH_SHORT).show();
+
             }
         });
+        btn_look.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                switch (v.getId()){
+                    case R.id.lookBtn:
+                        tv_all.setText(dbHelper.getResult());
+                        Toast.makeText(ProfileActivity.this, "최근 정보 조회", Toast.LENGTH_SHORT).show();
+                        break;
 
-    }
-
-
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-        globalStorage = GlobalStorage.getInstance();
-        name = findViewById(R.id.profile_name);
-        age = findViewById(R.id.profile_age);
-        height = findViewById(R.id.profile_height);
-        weight = findViewById(R.id.profile_weight);
-        //Intent
-        Button btn_edit = (Button)findViewById(R.id.editBtn);
-        btn_edit.setOnClickListener(new View.OnClickListener() {
-        public void onClick(View v){
-            // if edittext value not equal "" -> else 항목 넣어라 좀..
-            if (!globalStorage.getUserDataHashMap().containsKey("name")) {
-                globalStorage.getUserDataHashMap().put("name", new UserData(name.getText().toString(),
-                                                                            Integer.parseInt(age.getText().toString()),
-                                                                            Integer.parseInt(height.getText().toString()),
-                                                                            Integer.parseInt(weight.getText().toString())));
-
-            } else {
-                Toast.makeText(getApplicationContext(), "이미 사용중인 이름입니다.", Toast.LENGTH_SHORT).show();
+                }
             }
+        });
+        dbHelper = new DBHelper(ProfileActivity.this,1);
+
+        if (globalStorage.getDirectionDataHashMap() != null) {
+            if (userData == null) {
+                userData = new userData();
+            }
+            userData.setUserName(tv_name);
+            userData.setUserAge(tv_age);
+            userData.setUserHeight(tv_height);
+            userData.setUserWeight(tv_weight);
+            globalStorage.getUserDataHashMap().put("userInfo",userData);
         }
-        });
-
-
     }
-
- */
+}

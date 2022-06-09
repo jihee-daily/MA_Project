@@ -122,6 +122,11 @@ public class MainFragment extends Fragment
     private Double startLat;
     private Double startLng;
 
+    private String userName;
+    private int userAge;
+    private int userHeight;
+    private int userWeight;
+
     public Double totalDistance;
     public int totalTime;
 
@@ -208,6 +213,21 @@ public class MainFragment extends Fragment
             endLat = mapDirectionData.getEndLat();
             endLng = mapDirectionData.getEndLng();
 
+        } else {
+            Log.d("MainFragment", "Data is Null1");
+        }
+
+        if(globalStorage.getUserDataHashMap() != null && !globalStorage.getUserDataHashMap().isEmpty()) {
+            userData = globalStorage.getUserDataHashMap().get("userInfo");
+
+            if(userData == null) {
+                userData = new UserData();
+            }
+
+            userName = userData.getUserName();
+            userAge = userData.getUserAge();
+            userHeight = userData.getUserHeight();
+            userWeight = userData.getUserWeight();
         } else {
             Log.d("MainFragment", "Data is Null1");
         }
@@ -324,7 +344,7 @@ public class MainFragment extends Fragment
                 // 센서 이벤트가 발생할때 마다 걸음수 증가
                 walk++;
                 tv_todayWalk_value.setText(String.valueOf(walk));
-                calorie = (float)(weight2*(0.9)*0.0004*walk);
+                calorie = (float)(userWeight*(0.9)*0.0004*walk);
                 main_heartRate_value.setText(String.valueOf((int)calorie));
 
                 //실시간 이동거리

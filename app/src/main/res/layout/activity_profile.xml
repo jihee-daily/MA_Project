@@ -24,27 +24,27 @@
             android:src="@drawable/profile_pic"
             />
     </androidx.cardview.widget.CardView>
-<!--    <ImageView-->
-<!--        android:id="@+id/profile_image"-->
-<!--        android:layout_marginTop="100dp"-->
-<!--        android:layout_width="160dp"-->
-<!--        android:layout_height="160dp"-->
-<!--        android:layout_gravity="center"-->
-<!--        android:maxWidth="150dp"-->
-<!--        android:maxHeight="150dp"-->
-<!--        android:adjustViewBounds="true"-->
-<!--        android:onClick="onClick"-->
-<!--        android:src="@drawable/profile_pic"/>-->
-<!--    <Button-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:id="@+id/btn_UploadPicture"-->
-<!--        android:layout_gravity="center"-->
-<!--        android:layout_marginTop="15dp"-->
-<!--        android:text="select"-->
-<!--        android:fontFamily="@font/gmarketsans_medium"-->
-<!--        android:background="#00FFFFFF"-->
-<!--        android:textColor="@color/black"/>-->
+    <!--    <ImageView-->
+    <!--        android:id="@+id/profile_image"-->
+    <!--        android:layout_marginTop="100dp"-->
+    <!--        android:layout_width="160dp"-->
+    <!--        android:layout_height="160dp"-->
+    <!--        android:layout_gravity="center"-->
+    <!--        android:maxWidth="150dp"-->
+    <!--        android:maxHeight="150dp"-->
+    <!--        android:adjustViewBounds="true"-->
+    <!--        android:onClick="onClick"-->
+    <!--        android:src="@drawable/profile_pic"/>-->
+    <!--    <Button-->
+    <!--        android:layout_width="wrap_content"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        android:id="@+id/btn_UploadPicture"-->
+    <!--        android:layout_gravity="center"-->
+    <!--        android:layout_marginTop="15dp"-->
+    <!--        android:text="select"-->
+    <!--        android:fontFamily="@font/gmarketsans_medium"-->
+    <!--        android:background="#00FFFFFF"-->
+    <!--        android:textColor="@color/black"/>-->
 
 
     <LinearLayout
@@ -53,15 +53,24 @@
         android:gravity="center"
         android:layout_marginTop="150dp"
         android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/profile_name"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="이름"
-            android:textSize="20dp" />
+            android:orientation="horizontal"
+            android:layout_gravity="center">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="15dp"
+                android:layout_marginRight="10dp"
+                android:text="이름"/>
 
+            <EditText
+                android:id="@+id/profile_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="20dp" />
+        </LinearLayout>
 
     </LinearLayout>
     <LinearLayout
@@ -70,29 +79,29 @@
         android:orientation="horizontal"
         android:layout_marginTop="30dp"
         android:gravity="center">
-        <TextView
+        <EditText
             android:id="@+id/profile_age"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:textSize="18dp"
-            android:text="나이" />
-        <TextView
+            />
+        <EditText
             android:id="@+id/profile_height"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:textSize="18dp"
             android:layout_marginLeft="50dp"
-            android:text="키" />
-        <TextView
+            />
+        <EditText
             android:id="@+id/profile_weight"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:textSize="18dp"
             android:layout_marginLeft="50dp"
-            android:text="몸무게" />
+            />
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
@@ -125,13 +134,34 @@
             android:text="Weight" />
 
     </LinearLayout>
-    <Button
-        android:id="@+id/editBtn"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:layout_marginTop="30dp"
-        android:layout_gravity="center"
-        android:textSize="20dp"
-        android:text="edit"
-        android:background="@drawable/background_trackingstart"/>
+        android:layout_gravity="center">
+        <Button
+            android:id="@+id/editBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="20dp"
+            android:layout_gravity="center"
+            android:textSize="20dp"
+            android:text="edit"
+            android:background="@drawable/background_trackingstart"/>
+        <Button
+            android:id="@+id/lookBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textSize="20dp"
+            android:text="조회"
+            android:background="@drawable/background_trackingstart"/>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/show"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"/>
+
 </LinearLayout>
