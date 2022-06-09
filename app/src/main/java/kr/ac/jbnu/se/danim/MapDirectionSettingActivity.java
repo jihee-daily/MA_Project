@@ -61,6 +61,7 @@ public class MapDirectionSettingActivity extends AppCompatActivity implements On
     private MapDirectionData mapDirectionData;
     private Object HashMap;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -115,7 +116,6 @@ public class MapDirectionSettingActivity extends AppCompatActivity implements On
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-
                 startActivity(intent);
             }
         });

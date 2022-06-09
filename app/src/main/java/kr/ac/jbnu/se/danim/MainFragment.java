@@ -1,5 +1,7 @@
 package kr.ac.jbnu.se.danim;
 
+import static android.content.Context.LOCATION_SERVICE;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -12,8 +14,10 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -28,6 +32,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
@@ -130,7 +135,13 @@ public class MainFragment extends Fragment
 
     private LatLng firstLatLng = new LatLng(0, 0);
     private LatLng secondLatLng = new LatLng(0, 0);
-    private double sumOfDistance;
+    private double sumOfDistance = 0.0;
+
+    private LocationManager locationManager;
+    private String provider;
+
+    private boolean isLocation = false;
+
     /********************* << naver map >> *********************/
 
 
@@ -143,31 +154,34 @@ public class MainFragment extends Fragment
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_main, container, false);
 
-        if(ContextCompat.checkSelfPermission(getActivity(),
-                Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_DENIED){
+        if (ContextCompat.checkSelfPermission(getActivity(),
+                Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_DENIED) {
 
             requestPermissions(new String[]{Manifest.permission.ACTIVITY_RECOGNITION}, 0);
         }
 
         //걸음 수 측정
-        tv_todayWalk_value = (TextView)view.findViewById(R.id.main_todayWalk_value);
+        tv_todayWalk_value = (TextView) view.findViewById(R.id.main_todayWalk_value);
 
-        main_heartRate_value = (TextView)view.findViewById(R.id. main_heartRate_value);
+        main_heartRate_value = (TextView) view.findViewById(R.id.main_heartRate_value);
 
-        sm = (SensorManager)getContext().getSystemService(Context.SENSOR_SERVICE);  //센서 메니저 생성
+        sm = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);  //센서 메니저 생성
         sensor_step_detector = sm.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);      //스텝 감지 센서 등록
-        if(sensor_step_detector == null){
+        if (sensor_step_detector == null) {
             Toast.makeText(getContext(), "No Step Detect Sensor", Toast.LENGTH_SHORT).show();
         }
+        this.locationManager = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        provider = locationManager.getBestProvider(criteria, false);
 
         globalStorage = GlobalStorage.getInstance();
 
         calorie = 0;
 
-        circleProgressBar= view.findViewById(R.id.main_circlebar);
+        circleProgressBar = view.findViewById(R.id.main_circlebar);
 
-        countDownTimeView = (TextView)view.findViewById(R.id.countdown_Time_view);
-        countDownDistanceView = (TextView)view.findViewById(R.id.countdown_distance_view);
+        countDownTimeView = (TextView) view.findViewById(R.id.countdown_Time_view);
+        countDownDistanceView = (TextView) view.findViewById(R.id.countdown_distance_view);
 
         //버튼
         Button Start_btn = (Button) view.findViewById(R.id.start_btn);
@@ -179,65 +193,64 @@ public class MainFragment extends Fragment
         FloatingActionButton floatingMyLocation = view.findViewById(R.id.floatingMyLocation);
         floatingMyLocation.setOnClickListener(this);
 
+
         /********************* << naver map >> *********************/
 
-            mapView = view.findViewById(R.id.map);
-            mapView.onCreate(savedInstanceState);
-            mapView.getMapAsync(this::onMapReady);
-            locationSource = new FusedLocationSource(this, LOCATION_PERMISSION_REQUEST_CODE);
+        mapView = view.findViewById(R.id.map);
+        mapView.onCreate(savedInstanceState);
+        mapView.getMapAsync(this::onMapReady);
+        locationSource = new FusedLocationSource(this, LOCATION_PERMISSION_REQUEST_CODE);
 
-            if (globalStorage.getDirectionDataHashMap() != null && !globalStorage.getDirectionDataHashMap().isEmpty()) {
-                mapDirectionData = globalStorage.getDirectionDataHashMap().get("info");
+        if (globalStorage.getDirectionDataHashMap() != null && !globalStorage.getDirectionDataHashMap().isEmpty()) {
+            mapDirectionData = globalStorage.getDirectionDataHashMap().get("info");
 
-                if (mapDirectionData == null) {
-                    Log.d("MainFragment", "Data is Null1");
-                    mapDirectionData = new MapDirectionData();
-                }
-
-                startLat = mapDirectionData.getStartLat();
-                startLng = mapDirectionData.getStartLng();
-                endLat = mapDirectionData.getEndLat();
-                endLng = mapDirectionData.getEndLng();
-
-            } else {
+            if (mapDirectionData == null) {
                 Log.d("MainFragment", "Data is Null1");
+                mapDirectionData = new MapDirectionData();
             }
 
-            fusedLocationClient = LocationServices.getFusedLocationProviderClient(getContext());
+            startLat = mapDirectionData.getStartLat();
+            startLng = mapDirectionData.getStartLng();
+            endLat = mapDirectionData.getEndLat();
+            endLng = mapDirectionData.getEndLng();
 
-            if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                    && ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        } else {
+            Log.d("MainFragment", "Data is Null1");
+        }
 
-                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 0);
-            }
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(getContext());
 
-            fusedLocationClient.getLastLocation().addOnSuccessListener((Activity) getContext(), new OnSuccessListener<Location>() {
-                @Override
-                public void onSuccess(Location location) {
-                    currentPosition = new LatLng(location.getLatitude(), location.getLongitude());
-                    //Toast.makeText(getContext(), "현재 : " + currentPosition, Toast.LENGTH_LONG).show();
+        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-                    if (location != null) {
-                        // Logic to handle location object
-                    }
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 0);
+        }
+
+        fusedLocationClient.getLastLocation().addOnSuccessListener((Activity) getContext(), new OnSuccessListener<Location>() {
+            @Override
+            public void onSuccess(Location location) {
+                currentPosition = new LatLng(location.getLatitude(), location.getLongitude());
+                //Toast.makeText(getContext(), "현재 : " + currentPosition, Toast.LENGTH_LONG).show();
+
+                if (location != null) {
+                    // Logic to handle location object
                 }
-            });
+            }
+        });
 
 
         /********************* << naver map >> *********************/
-
         return view;
     }
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()){
+        switch (view.getId()) {
             case R.id.start_btn:
                 startTimer();
+                isLocation = true;
                 firstLatLng = new LatLng(currentPosition.latitude, currentPosition.longitude);
-                countDownDistanceView.setText(""+ (totalDistance-sumOfDistance) / 1000+ "km");
-                circleProgressBar.setMax(totalDistance);
-                circleProgressBar.setProgress((int)sumOfDistance);
+                Toast.makeText(getContext(), ": : " + firstLatLng, Toast.LENGTH_LONG).show();
                 break;
             case R.id.stop_btn:
                 stopTimer();
@@ -247,7 +260,8 @@ public class MainFragment extends Fragment
                 startActivityForResult(intent1, MapSearchActivity.MAPSEARCH_ACTIVITY_START);
                 break;
             case R.id.floatingMyLocation:
-                CameraUpdate cameraUpdate = CameraUpdate.scrollTo(currentPosition).animate(CameraAnimation.Easing);;
+                CameraUpdate cameraUpdate = CameraUpdate.scrollTo(currentPosition).animate(CameraAnimation.Easing);
+                ;
                 naverMap.moveCamera(cameraUpdate);
                 break;
 
@@ -267,6 +281,11 @@ public class MainFragment extends Fragment
         super.onResume();
         sm.registerListener((SensorEventListener) this, sensor_step_detector, SensorManager.SENSOR_DELAY_NORMAL);
         mapView.onResume();
+        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        locationManager.requestLocationUpdates(provider, 400, 1, this);
     }
 
     @Override
@@ -339,16 +358,19 @@ public class MainFragment extends Fragment
     @Override
     public void onLocationChanged(@NonNull Location location) {
 
-        secondLatLng = new LatLng(currentPosition.latitude, currentPosition.longitude);
-        // 누적 이동거리 갱신
-        Location firstLocation = new Location("firstLocation"); //시작 전 위치
-        firstLocation.setLatitude(firstLatLng.latitude);
-        firstLocation.setLongitude(firstLatLng.longitude);
-        Location secondLocation = new Location("secondLocation"); //이동 후 실시간 위치
-        secondLocation.setLatitude(secondLatLng.latitude);
-        secondLocation.setLongitude(secondLatLng.longitude);
-        sumOfDistance += firstLocation.distanceTo(secondLocation);     // m -> km
+        if(isLocation == true) {
 
+            secondLatLng = new LatLng(currentPosition.latitude, currentPosition.longitude);
+            // 누적 이동거리 갱신
+            sumOfDistance += firstLatLng.distanceTo(secondLatLng);
+
+            countDownDistanceView.setText("" + ((totalDistance - sumOfDistance) / 1000) + "km");
+            circleProgressBar.setProgress((int) sumOfDistance);
+
+            firstLatLng = new LatLng(currentPosition.latitude, currentPosition.longitude);
+
+            Toast.makeText(getContext(), " " + sumOfDistance + "/" + totalDistance, Toast.LENGTH_SHORT).show();
+        }
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -451,7 +473,7 @@ public class MainFragment extends Fragment
 
                             }
 
-                            Toast.makeText(getContext(), "draw " , Toast.LENGTH_SHORT).show();
+//                            Toast.makeText(getContext(), "draw " , Toast.LENGTH_SHORT).show();
                             path.setCoords(ArrayPositionList);
                             path.setColor(Color.rgb(107, 102, 255));
                             path.setMap(naverMap);
@@ -459,11 +481,15 @@ public class MainFragment extends Fragment
                     }
                     totalDistance = Integer.valueOf(properties.get("totalDistance").toString());
                     totalTime = Integer.valueOf(properties.get("totalTime").toString()) / 60;
+
+                    circleProgressBar.setMax(totalDistance);
                 }
     //                getObstacles();
             } catch(Exception e) {
                 e.printStackTrace();
             }
+
+
         }
     }
 
@@ -530,7 +556,6 @@ public class MainFragment extends Fragment
         } catch (NullPointerException e){
             Toast.makeText(getContext(), "null" , Toast.LENGTH_SHORT).show();
         }
-
     }
 //
 //    public void onRequestPermissionsResult(int requestCode,
@@ -547,7 +572,6 @@ public class MainFragment extends Fragment
 //    }
     private long tempTime = 0;
     private void startTimer() {
-        Toast.makeText(getContext(), ""+ totalTime , Toast.LENGTH_SHORT).show();
         countDownTimer = new CountDownTimer(totalTime*60000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
