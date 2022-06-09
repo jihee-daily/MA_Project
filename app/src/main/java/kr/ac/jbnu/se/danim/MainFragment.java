@@ -16,11 +16,10 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.util.JsonReader;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -78,7 +77,7 @@ import java.util.List;
 
 
 public class MainFragment extends Fragment
-        implements SensorEventListener, View.OnClickListener, OnMapReadyCallback, LocationListener {
+        implements SensorEventListener, View.OnClickListener, OnMapReadyCallback {
     long stopTime = 0;
 
     private CountDownTimer countDownTimer;
@@ -123,8 +122,8 @@ public class MainFragment extends Fragment
     private Double startLat;
     private Double startLng;
 
-    public static int totalDistance;
-    public static int totalTime;
+    public Double totalDistance;
+    public int totalTime;
 
     String uu;
 
@@ -135,12 +134,10 @@ public class MainFragment extends Fragment
 
     private LatLng firstLatLng = new LatLng(0, 0);
     private LatLng secondLatLng = new LatLng(0, 0);
-    private double sumOfDistance = 0.0;
-
-    private LocationManager locationManager;
-    private String provider;
+    public Double sumOfDistance;
 
     private boolean isLocation = false;
+    float i = 0;
 
     /********************* << naver map >> *********************/
 
@@ -170,9 +167,6 @@ public class MainFragment extends Fragment
         if (sensor_step_detector == null) {
             Toast.makeText(getContext(), "No Step Detect Sensor", Toast.LENGTH_SHORT).show();
         }
-        this.locationManager = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-        provider = locationManager.getBestProvider(criteria, false);
 
         globalStorage = GlobalStorage.getInstance();
 
@@ -249,10 +243,9 @@ public class MainFragment extends Fragment
             case R.id.start_btn:
                 startTimer();
                 isLocation = true;
-                firstLatLng = new LatLng(currentPosition.latitude, currentPosition.longitude);
-                Toast.makeText(getContext(), ": : " + firstLatLng, Toast.LENGTH_LONG).show();
                 break;
             case R.id.stop_btn:
+                isLocation = false;
                 stopTimer();
                 break;
             case R.id.search_btn:
@@ -261,7 +254,6 @@ public class MainFragment extends Fragment
                 break;
             case R.id.floatingMyLocation:
                 CameraUpdate cameraUpdate = CameraUpdate.scrollTo(currentPosition).animate(CameraAnimation.Easing);
-                ;
                 naverMap.moveCamera(cameraUpdate);
                 break;
 
@@ -285,7 +277,6 @@ public class MainFragment extends Fragment
                 && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
-        locationManager.requestLocationUpdates(provider, 400, 1, this);
     }
 
     @Override
@@ -328,14 +319,6 @@ public class MainFragment extends Fragment
     // 센서값이 변할때
     @Override
     public void onSensorChanged(SensorEvent event){
-
-        // 센서 유형이 스텝감지 센서인 경우 걸음수 +1
-//        switch (event.sensor.getType()){
-//            case Sensor.TYPE_STEP_DETECTOR:
-//                tv_todayWalk_value.setText("" + (++walk));
-//                break;
-//        }
-
         if(event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR){
             if(event.values[0]==1.0f){
                 // 센서 이벤트가 발생할때 마다 걸음수 증가
@@ -343,33 +326,12 @@ public class MainFragment extends Fragment
                 tv_todayWalk_value.setText(String.valueOf(walk));
                 calorie = (float)(weight2*(0.9)*0.0004*walk);
                 main_heartRate_value.setText(String.valueOf((int)calorie));
+
+                //실시간 이동거리
+                sumOfDistance = walk*0.6; // m
+                circleProgressBar.setProgress((int) Math.round(sumOfDistance));
+                countDownDistanceView.setText(Math.round((totalDistance-sumOfDistance)/1000*100)/100.0+" km");
             }
-
-            //walk += event.values[0];
-            //calorie = (int)(weight2*(0.9)*0.0004*walk);
-
-            //weight = globalStorage.getUserDataHashMap().get(userName).getUserWeight();
-
-            //tv_todayWalk_value.setText(String.valueOf((int)event.values[0]));
-
-        }
-    }
-
-    @Override
-    public void onLocationChanged(@NonNull Location location) {
-
-        if(isLocation == true) {
-
-            secondLatLng = new LatLng(currentPosition.latitude, currentPosition.longitude);
-            // 누적 이동거리 갱신
-            sumOfDistance += firstLatLng.distanceTo(secondLatLng);
-
-            countDownDistanceView.setText("" + ((totalDistance - sumOfDistance) / 1000) + "km");
-            circleProgressBar.setProgress((int) sumOfDistance);
-
-            firstLatLng = new LatLng(currentPosition.latitude, currentPosition.longitude);
-
-            Toast.makeText(getContext(), " " + sumOfDistance + "/" + totalDistance, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -403,12 +365,13 @@ public class MainFragment extends Fragment
             super.onPostExecute(s);
             try {
                 JSONParser parser = new JSONParser();
-                Object obj =  parser.parse(s);
+                Object obj = parser.parse(s);
                 JSONObject response = (JSONObject) obj;
                 JSONArray features = (JSONArray) response.get("features");
 
-                for (int i = 0; i < features.size(); i ++) {
-                    JSONObject feature = (JSONObject) features.get(i);
+                JSONObject feature = null;
+                for (int i = 0; i < features.size(); i++) {
+                    feature = (JSONObject) features.get(i);
                     JSONObject geometry = (JSONObject) feature.get("geometry");
                     JSONObject properties = (JSONObject) feature.get("properties");
 
@@ -464,7 +427,7 @@ public class MainFragment extends Fragment
                                 JSONArray coordinate = (JSONArray) coordinates.get(k);
                                 ArrayPositionList.add(new LatLng((Double) coordinate.get(1), (Double) coordinate.get(0)));
 
-                                if (k == 0  || k == coordinate.size()) {
+                                if (k == 0 || k == coordinate.size()) {
                                     ArrayList<Double> data = new ArrayList<>();
                                     data.add((Double) coordinate.get(1));
                                     data.add((Double) coordinate.get(0));
@@ -477,20 +440,25 @@ public class MainFragment extends Fragment
                             path.setCoords(ArrayPositionList);
                             path.setColor(Color.rgb(107, 102, 255));
                             path.setMap(naverMap);
+
                         }
                     }
-                    totalDistance = Integer.valueOf(properties.get("totalDistance").toString());
-                    totalTime = Integer.valueOf(properties.get("totalTime").toString()) / 60;
-
-                    circleProgressBar.setMax(totalDistance);
                 }
-    //                getObstacles();
+                for (int i = 0; i < features.size(); i++) {
+                    feature = (JSONObject) features.get(i);
+                    JSONObject j = (JSONObject) feature.get("properties");
+                    totalDistance = Double.valueOf(j.get("totalDistance").toString()); //m
+                    totalTime = Integer.valueOf(j.get("totalTime").toString()) / 60;
+                    circleProgressBar.setMax((int) Math.round(totalDistance));
+                }
+
             } catch(Exception e) {
                 e.printStackTrace();
             }
 
-
         }
+
+
     }
 
 
@@ -550,6 +518,7 @@ public class MainFragment extends Fragment
 
                 NetworkTask networkTask = new NetworkTask(uu, null);
                 networkTask.execute();
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
